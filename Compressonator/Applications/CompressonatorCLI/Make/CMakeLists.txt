@@ -109,6 +109,7 @@ list (APPEND CMP_SOURCES1 "${CMAKE_CURRENT_SOURCE_DIR}/../Source/CompressonatorC
 
 
 add_executable(CompressonatorCLI-bin ${CMP_SOURCES1} ${CMP_MESHOPT_SRC})
+target_link_libraries(CompressonatorCLI-bin dl)
 
 # (ubuntu only)uncomment below to rebuild all the dependency libraries from cmake 
 #if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")

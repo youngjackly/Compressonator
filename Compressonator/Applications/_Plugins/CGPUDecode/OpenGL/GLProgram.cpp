@@ -1,5 +1,5 @@
 //=====================================================================
-// Copyright 2016 (c), Advanced Micro Devices, Inc. All rights reserved.
+// Copyright 2019 (c), Advanced Micro Devices, Inc. All rights reserved.
 //=====================================================================
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -21,41 +21,55 @@
 // THE SOFTWARE.
 //
 
-#ifndef _Plugin_COPENGL_H
-#define _Plugin_COPENGL_H
+#include "GLProgram.h"
 
-#pragma once
+static const GLchar* vetexCode =
+		"#version 310 es\n"
+		"layout (location = 0) in vec4 aPosCoord;\n"
+		"out vec2 oCoord;\n"
+		"void main()\n"
+		"{\n"
+			"gl_Position = vec4(aPosCoord.x, aPosCoord.y, 0.5, 1.0);\n"
+			"oCoord = aPosCoord.zw;\n"
+		"};\n";
 
-#define WIN32_LEAN_AND_MEAN        // Exclude rarely-used stuff from Windows headers
-#include <assert.h>
-#ifdef _WIN32
-#include <tchar.h>
-#endif
-#include "GPU_OpenGL.h"
-#include "PluginInterface.h"
-#ifdef _WIN32
-// {D88C7EB3-38D3-4B75-BE14-22ED445156FE}
-int guid[] = {0xd88c7eb3, 0x38d3, 0x4b75, 0xbe, 0x14, 0x22, 0xed, 0x44, 0x51, 0x56, 0xfe }
-static const GUID  g_GUID_OPENGL = guid;
-#endif
+static const GLchar* fragCode =
+		"#version 310 es\n"
+		"precision highp float;\n"
+		"uniform sampler2D tex;\n"
+		"in vec2 oCoord;\n"
+		"out vec4 o_fragColor;\n"
+		"void main()\n"
+		"{\n"
+			"o_fragColor = texture(tex, oCoord);\n"
+		"}\n";
 
 
-#define TC_PLUGIN_VERSION_MAJOR    1
-#define TC_PLUGIN_VERSION_MINOR    0
+static const GLchar* frag2 =
+		"#version 310 es\n"
+		"precision highp float;\n"
+		"uniform sampler2D tex;\n"
+		"in vec2 oCoord;\n"
+		"out vec4 o_fragColor;\n"
+		"void main()\n"
+		"{\n"
+			"vec4 c = texture(tex, oCoord);\n"
+			"vec2 v1 = c.xy*2.0 + vec2(-1.0, -1.0);\n"
+			"float b = sqrt(clamp(1.0 - dot(v1, v1), 0.0, 1.0));\n"
+			"b = (b + 1.0)*0.5;\n"
+			"o_fragColor = c;\n"
+			"o_fragColor.b = b;\n"
+		"}\n";
 
-using namespace GPU_Decode;
 
-class Plugin_COpenGL : public PluginInterface_GPUDecode
+
+
+GLProgram::GLProgram()
 {
-public: 
-    Plugin_COpenGL();
-        virtual ~Plugin_COpenGL();
-        int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
-        int TC_Init(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback);
-        CMP_ERROR TC_Decompress(const CMP_Texture* pSourceTexture, CMP_Texture* pDestTexture);
-        int TC_Close();
-private:
-        TextureControl  *m_pGPUDecode;
-};
-
-#endif
+	this->build(vetexCode, frag2);
+	_texLoc = glGetUniformLocation(this->Program, "tex");
+	if( 0 != glGetError())
+	{
+		printf("gl shader not compile right\n");
+	}
+}

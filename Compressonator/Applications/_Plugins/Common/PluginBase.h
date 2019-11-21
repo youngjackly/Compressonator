@@ -29,6 +29,12 @@
 #ifndef _PLUGINBASE_H
 #define _PLUGINBASE_H
 
+#ifdef _WIN32
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT
+#endif
+
 #include "stdafx.h"
 #include "Compressonator.h"
 #include <memory>
@@ -65,11 +71,11 @@ typedef enum
 } TC_ErrorLevel;
 
 //#define DECLARE_PLUGIN(x)     extern "C"{__declspec(dllexport) std::unique_ptr<x> makePlugin()  { return std::move(std::make_unique<x>()); }}
-#define DECLARE_PLUGIN(x)         extern "C"{__declspec(dllexport) void * makePlugin()       { return new x;}}
-#define SET_PLUGIN_TYPE(x)        extern "C"{__declspec(dllexport) char * getPluginType()    { return x;  }}
-#define SET_PLUGIN_NAME(x)        extern "C"{__declspec(dllexport) char * getPluginName()    { return x; }}
-#define SET_PLUGIN_UUID(x)        extern "C"{__declspec(dllexport) char * getPluginUUID()    { return x; }}
-#define SET_PLUGIN_CATEGORY(x)    extern "C"{__declspec(dllexport) char * getPluginCategory(){ return x; }}
+#define DECLARE_PLUGIN(x)         extern "C"{ DLLEXPORT void * makePlugin()       { return new x;}}
+#define SET_PLUGIN_TYPE(x)        extern "C"{ DLLEXPORT char * getPluginType()    { return x;  }}
+#define SET_PLUGIN_NAME(x)        extern "C"{ DLLEXPORT char * getPluginName()    { return x; }}
+#define SET_PLUGIN_UUID(x)        extern "C"{ DLLEXPORT char * getPluginUUID()    { return x; }}
+#define SET_PLUGIN_CATEGORY(x)    extern "C"{ DLLEXPORT char * getPluginCategory(){ return x; }}
 
 class PluginBase 
 {

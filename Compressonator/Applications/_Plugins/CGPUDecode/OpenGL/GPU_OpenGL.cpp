@@ -27,12 +27,21 @@
 #include "MIPS.h"
 #include <stdio.h>
 #include "GPU_Decode.h"
+#include <GLFW/glfw3.h>
+#include "GLProgram.h"
 
+#ifdef _WIN32
 #pragma comment(lib, "opengl32.lib")        // Open GL
 #pragma comment(lib, "Glu32.lib")           // Glu 
 #pragma comment(lib, "glew32.lib")          // glew 1.13.0
-
+#else
+#include <unistd.h>
+#endif
 using namespace GPU_Decode;
+
+GLFWwindow* window = NULL;
+
+
 
 GPU_OpenGL::GPU_OpenGL(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):RenderWindow("OpenGL")
 {
@@ -42,13 +51,60 @@ GPU_OpenGL::GPU_OpenGL(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):Rend
     if (Height <= 0)
         Height = 480;
 
-    if (FAILED(InitWindow(Width, Height, callback)))
+	if (0 != (InitWindow(Width, Height)))
     {
         fprintf(stderr, "Failed to initialize Window. Please make sure GLEW is downloaded.\n");
         assert(0);
     }
 
-    EnableWindowContext(m_hWnd, &m_hDC, &m_hRC);
+
+
+	if(!glfwInit())
+		assert(false);
+	window = glfwCreateWindow(Width, Height, "OpenGL", NULL, NULL);
+
+	if(!window)
+	{
+		glfwTerminate();
+		assert(false);
+	}
+
+	glfwMakeContextCurrent(window);
+
+
+	// Initialize GLEW
+	glewExperimental = GL_TRUE; // Needed for core profile
+	if (glewInit() != GLEW_OK) {
+		fprintf(stderr, "Failed to initialize GLEW. Please make sure GLEW is downloaded.\n");
+		assert(false);
+	}
+
+	_program = new GLProgram();
+
+	struct PosCoord
+	{
+		float d[4];
+	};
+
+	const PosCoord vetex[] =
+	{
+		{-1.f, -1.f, 0.f, 0.f},
+		{1.f, 1.f, 1.f, 1.f},
+		{-1.f, 1.f, 0.f, 1.f},
+
+		{-1.f, -1.f, 0.f, 0.f},
+		{1.f, -1.f, 1.f, 0.f},
+		{1.f, 1.f, 1.f, 1.f},
+	};
+
+	GLuint vertexBuffer;
+	glGenBuffers(1, &vertexBuffer );
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof (PosCoord)*6, vetex,  GL_STATIC_DRAW);
+
+	_VBO = vertexBuffer;
+
+	EnableWindowContext();
 }
 
 GPU_OpenGL::~GPU_OpenGL()
@@ -63,13 +119,20 @@ void GPU_OpenGL::GLRender()
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+	_program->Use();
     // setup texture mapping
     glEnable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
+	glUniform1i(_program->_texLoc, 0);
 
-    glPushMatrix();
-    glRotatef(theta, 0.0f, 0.0f, 1.0f);
-    glBegin(GL_QUADS);
+	glBindBuffer(GL_ARRAY_BUFFER, _VBO);
+
+	glVertexAttribPointer( 0, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glEnableVertexAttribArray(0);
+
+	 glDrawArrays(GL_TRIANGLES, 0, 6);
 
 #ifdef SHOW_WINDOW
     //for certain image format like bmp, the image texture is upside down, need to use coordinate as below
@@ -80,13 +143,13 @@ void GPU_OpenGL::GLRender()
     glTexCoord2d(0.0, 0.0); glVertex2d(-1.0, +1.0);
 #else
     //for dds use coordinate below 
-    glTexCoord2d(0.0, 0.0); glVertex2d(-1.0, -1.0);
-    glTexCoord2d(1.0, 0.0); glVertex2d(+1.0, -1.0);
-    glTexCoord2d(1.0, 1.0); glVertex2d(+1.0, +1.0);
-    glTexCoord2d(0.0, 1.0); glVertex2d(-1.0, +1.0);
+//    glTexCoord2d(0.0, 0.0); glVertex2d(-1.0, -1.0);
+//    glTexCoord2d(1.0, 0.0); glVertex2d(+1.0, -1.0);
+//    glTexCoord2d(1.0, 1.0); glVertex2d(+1.0, +1.0);
+//    glTexCoord2d(0.0, 1.0); glVertex2d(-1.0, +1.0);
 #endif
-    glEnd();
-    glPopMatrix();
+
+	glfwSwapBuffers(window);
 
 #ifdef SHOW_WINDOW
     //for debug when showwindow is enable
@@ -199,13 +262,6 @@ GLuint GPU_OpenGL::LoadTexture(const CMP_Texture* pSourceTexture, bool wrap)
         return GLuint(-1);
     }
 
-    // Initialize GLEW
-    glewExperimental = GL_TRUE; // Needed for core profile
-    if (glewInit() != GLEW_OK) {
-        fprintf(stderr, "Failed to initialize GLEW. Please make sure GLEW is downloaded.\n");
-        return GLuint(-1);
-    }
-
     glEnable(GL_TEXTURE_2D);
 
     glGenTextures(1, &texture);
@@ -232,7 +288,7 @@ GLuint GPU_OpenGL::LoadTexture(const CMP_Texture* pSourceTexture, bool wrap)
     //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     //for compressed image (only for mip level 1)
-    glCompressedTexImage2D(GL_TEXTURE_2D, 0, m_GLnum, pSourceTexture->dwWidth, pSourceTexture->dwHeight, 0, pSourceTexture->dwDataSize, pSourceTexture->pData);
+	glCompressedTexImage2D(GL_TEXTURE_2D, 0, m_GLnum, pSourceTexture->dwWidth, pSourceTexture->dwHeight, 0, pSourceTexture->dwDataSize, pSourceTexture->pData);
     
     return texture;
 }
@@ -276,6 +332,7 @@ CMP_ERROR WINAPI GPU_OpenGL::Decompress(
 #endif
     //  Wait in Main message loop, until render is complete
     //  then exit
+#ifdef _WIN32
     MSG msg = { 0 };
     int loopcount = 0;
     while (WM_QUIT != msg.message)
@@ -291,6 +348,17 @@ CMP_ERROR WINAPI GPU_OpenGL::Decompress(
             break;
         }
     }
+#else
+	GLRender();
+#endif
+
+	while (!glfwWindowShouldClose(window)) {
+
+		glfwPollEvents();
+		usleep(10000);
+
+	}
+
 
     if (pDestTexture)
     {
@@ -314,6 +382,8 @@ CMP_ERROR WINAPI GPU_OpenGL::Decompress(
                 glReadPixels(0, 0, pDestTexture->dwWidth, pDestTexture->dwHeight, GL_RGBA, GL_UNSIGNED_BYTE, pDestTexture->pData);
         }
     }
+
+	glfwTerminate();
 
     // free the texture
     FreeTexture(texture);

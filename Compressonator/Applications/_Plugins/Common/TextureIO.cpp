@@ -1159,7 +1159,7 @@ MipSet* DecompressMIPSet(MipSet *MipSetIn, CMP_GPUDecode decodeWith, Config *con
                 }
                 else
                 {
-#ifdef _WIN32
+#if 1
 #ifndef DISABLE_TESTCODE
                     CMP_ERROR res;
                     res = CMP_DecompressTexture(&srcTexture, &destTexture, decodeWith);

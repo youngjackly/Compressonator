@@ -2751,9 +2751,9 @@ int ProcessCMDLine(CMP_Feedback_Proc pFeedbackProc, MipSet* p_userMipSetIn)
 #endif
                     g_fProgress = -1;
 
-                    if (use_GPUDecode)
+					if (use_GPUDecode)
                     {
-#ifdef _WIN32
+#if 1
 #ifndef DISABLE_TESTCODE
                         if (srcTexture.format == CMP_FORMAT_ASTC)
                         {

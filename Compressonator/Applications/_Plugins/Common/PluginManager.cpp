@@ -28,6 +28,9 @@
 #include "string.h"
 #include "PluginInterface.h"
 #include "PluginManager.h"
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
 
 static bool CMP_FileExists(const std::string& abs_filename)
 {
@@ -226,7 +229,7 @@ void PluginManager::getPluginList(char * SubFolderName)
     else
         m_pluginlistset = true;
 
-#ifdef _WIN32  
+#ifdef _WIN32
     WIN32_FIND_DATAA fd;
     char fname[MAX_PATH];
 
@@ -425,7 +428,49 @@ void PluginManager::getPluginList(char * SubFolderName)
     } while (FindNextFileA(hFind, &fd));
 
     FindClose(hFind);
-#endif 
+#else
+ #include <gnu/lib-names.h>
+	void* handle = dlopen("libplugOpenGL.so", RTLD_NOW | RTLD_GLOBAL);
+//	void* handle = dlopen("libm.so.6", RTLD_NOW);
+	if (!handle) {
+		fprintf(stderr, "%s\n", dlerror());
+		exit(EXIT_FAILURE);
+	}
+
+	if (handle != NULL)
+	{
+		// Is this DLL a plugin for us if so keep its type and name details
+		PLUGIN_FACTORYFUNC funcHandle;
+		funcHandle = reinterpret_cast<PLUGIN_FACTORYFUNC>(dlsym(handle, "makePlugin"));
+		if(funcHandle !=NULL)
+		{
+			PluginDetails * curPlugin = new PluginDetails();
+			//printf("new: %s\n", fname);
+			curPlugin->setFileName("OPENGL");
+			curPlugin->dllHandle = handle;
+			PLUGIN_TEXTFUNC textFunc;
+			textFunc = reinterpret_cast<PLUGIN_TEXTFUNC>(dlsym(handle, "getPluginType"));
+			if (textFunc)
+				curPlugin->setType(textFunc());
+
+			textFunc = reinterpret_cast<PLUGIN_TEXTFUNC>(dlsym(handle, "getPluginName"));
+			if (textFunc)
+				curPlugin->setName(textFunc());
+
+			textFunc = reinterpret_cast<PLUGIN_TEXTFUNC>(dlsym(handle, "getPluginUUID"));
+			if (textFunc)
+				curPlugin->setUUID(textFunc());
+
+			textFunc = reinterpret_cast<PLUGIN_TEXTFUNC>(dlsym(handle, "getPluginCategory"));
+			if (textFunc)
+				curPlugin->setCategory(textFunc());
+
+			curPlugin->isRegistered = true;
+
+			pluginRegister.push_back(curPlugin);
+		}
+	}
+#endif
 }
 
 void * PluginManager::makeNewPluginInstance(int index)
@@ -613,6 +658,14 @@ void * PluginDetails::makeNewInstance()
                 return funcHandle();
             }
         }
+#else
+		if(!dllHandle) assert(false);
+
+		funcHandle = reinterpret_cast<PLUGIN_FACTORYFUNC>(dlsym(dllHandle, "makePlugin"));
+		if(funcHandle !=NULL)
+		{
+			return funcHandle();
+		}
 #endif
     }
     return NULL;

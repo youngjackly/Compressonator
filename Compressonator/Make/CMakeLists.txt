@@ -41,6 +41,7 @@ endforeach()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     list(APPEND CMP_INCLUDE_DIRS "/usr/local/include/OpenEXR/")
     list(APPEND CMP_INCLUDE_DIRS "/usr/include/OpenEXR/")
+	list(APPEND CMP_INCLUDE_DIRS "../Applications/_Plugins/Common/")
     #build Openexr 2.2 from cmake
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
         list(APPEND CMP_INCLUDE_DIRS "/usr/local/ilmbase22build/include/OpenEXR/")

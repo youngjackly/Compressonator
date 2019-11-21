@@ -35,7 +35,9 @@ Plugin_COpenGL::~Plugin_COpenGL()
 
 int Plugin_COpenGL::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
 {
+#ifdef _WIN32
     pPluginVersion->guid                    = g_GUID_OPENGL;
+#endif
     pPluginVersion->dwAPIVersionMajor       = TC_API_VERSION_MAJOR;
     pPluginVersion->dwAPIVersionMinor       = TC_API_VERSION_MINOR;
     pPluginVersion->dwPluginVersionMajor    = TC_PLUGIN_VERSION_MAJOR;

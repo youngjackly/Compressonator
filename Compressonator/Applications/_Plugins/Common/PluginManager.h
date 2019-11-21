@@ -76,9 +76,7 @@ class PluginDetails
 private:
         void clearMembers()
         {
-#ifdef _WIN32
             dllHandle  = NULL;
-#endif
             isStatic   = false;
             isRegistered = false;
 
@@ -97,6 +95,10 @@ private:
 
 #ifdef _WIN32
         HINSTANCE           dllHandle;
+
+#else
+public:
+		void* dllHandle;
 #endif
 
 };

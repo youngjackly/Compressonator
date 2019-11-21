@@ -149,5 +149,23 @@ HRESULT RenderWindow::InitWindow(int width, int height,WNDPROC callback)
     return S_OK;
 }
 #endif
+#else
+
+#include "GPU_DecodeBase.h"
+using namespace GPU_Decode;
+
+int RenderWindow::InitWindow(int width, int height)
+{
+	return 0;
+}
+
+void RenderWindow::EnableWindowContext()
+{
+
+}
+void RenderWindow::DisableWindowContext()
+{
+}
+
 #endif
 

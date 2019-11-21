@@ -24,7 +24,7 @@
 //
 //=====================================================================
 
-#ifdef _WIN32
+#if 1
 #ifndef DISABLE_TESTCODE
 #include "GPU_DecodeBase.h"
 #include "GPU_Decode.h"
@@ -74,7 +74,6 @@ CMP_ERROR CMP_API CMP_InitializeDecompessLibrary(CMP_GPUDecode GPUDecodeType, CM
 
     return CMP_OK;
 }
-
 
 //
 // CMP_ShutdownDecompessLibrary - Shutdown the DeCompression library

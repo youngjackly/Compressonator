@@ -26,10 +26,14 @@
 #ifndef H_GPU_DECODE_BASE
 #define H_GPU_DECODE_BASE
 
-#ifdef _WIN32
+#if 1
 #ifndef DISABLE_TESTCODE
 #include "Compressonator.h"
+#ifdef _WIN32
 #include "Windows.h"
+#else
+#define WINAPI
+#endif
 //uncomment to show image on console window for debug
 //#define SHOW_WINDOW  
 
@@ -45,15 +49,17 @@ namespace GPU_Decode
     public:
         RenderWindow(char *windowType)
         {
+#ifdef _win32
             m_hInstance = 0; // GetModuleHandle(NULL);
             // sprintf(m_strWindowName, "%s_%x_%s", str_WindowName, m_hInstance,windowType);
             // sprintf(m_strWindowClassName, "%s_%x_%s", str_WindowsClassName, m_hInstance, windowType);
             m_hDC = 0;
             m_hRC = 0;
             m_hWnd = nullptr;
+#endif
         };
         virtual ~RenderWindow() {};
-
+#ifdef _win32
         HDC         m_hDC;
         HGLRC       m_hRC;
         HWND        m_hWnd;
@@ -64,7 +70,11 @@ namespace GPU_Decode
         HRESULT     InitWindow(int width, int height, WNDPROC callback =NULL);
         void        EnableWindowContext(HWND hWnd, HDC * hDC, HGLRC * hRC);
         void        DisableWindowContext(HWND hWnd, HDC hDC, HGLRC hRC);
-
+#else
+		int		     InitWindow(int width, int height);
+		void        EnableWindowContext();
+		void        DisableWindowContext();
+#endif
     };
 
     class TextureControl: public RenderWindow
@@ -79,7 +89,9 @@ namespace GPU_Decode
     };
 }
 
+#ifdef _WIN32
 extern LRESULT CALLBACK WndProc2(HWND, UINT, WPARAM, LPARAM);
+#endif
 
 #endif // !H_GPU_DECODE_BASE
 #endif
